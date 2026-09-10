@@ -759,16 +759,36 @@ function schedLoop() {
   melody.forEach(([f, d]) => { playNote(f, d, t); t += d + 0.05; });
   mTimer = setTimeout(schedLoop, (t - audioCtx.currentTime) * 1000 + 600);
 }
-musicBtn.addEventListener('click', () => {
+/* ── 背景音樂檔（優先）──
+   把音樂檔命名為 bgm.mp3，放在跟 index.html 同一層即可。
+   檔案不存在或無法播放時，自動退回合成的音樂盒旋律。 */
+const BGM_FILE = 'bgm.mp3';
+const bgm = new Audio(BGM_FILE);
+bgm.loop = true; bgm.preload = 'auto'; bgm.volume = 0.6;
+let bgmOk = null;                       /* null=未知, true=可用, false=不可用 */
+bgm.addEventListener('canplaythrough', () => { if (bgmOk === null) bgmOk = true; }, { once: true });
+bgm.addEventListener('error', () => { bgmOk = false; });
+
+function setBtn(on) {
+  musicBtn.textContent = on ? '♫' : '♪';
+  musicBtn.classList.toggle('playing', on);
+}
+function stopAll() {
+  musicOn = false; clearTimeout(mTimer);
+  bgm.pause();
+  setBtn(false);
+}
+function startSynth() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (musicOn) {
-    musicOn = false; clearTimeout(mTimer);
-    musicBtn.textContent = '♪'; musicBtn.classList.remove('playing');
-  } else {
-    musicOn = true;
-    musicBtn.textContent = '♫'; musicBtn.classList.add('playing');
-    schedLoop();
-  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  musicOn = true; setBtn(true); schedLoop();
+}
+musicBtn.addEventListener('click', () => {
+  if (musicOn || !bgm.paused) { stopAll(); return; }
+  if (bgmOk === false) { startSynth(); return; }
+  /* 嘗試播放音樂檔；失敗（404、格式不支援、被瀏覽器擋）就改用音樂盒 */
+  bgm.play().then(() => { bgmOk = true; setBtn(true); })
+            .catch(() => { bgmOk = false; startSynth(); });
 });
 
 /* ═══════════════ INIT ═══════════════ */
