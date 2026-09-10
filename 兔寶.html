@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>約會邀請 ♡</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+:root {
+  --bg: #FFF0F5;
+  --bg-deep: #FFE4EE;
+  --surface: #FFFFFF;
+  --ink: #3D1525;
+  --ink-soft: #7A4A5C;
+  --rose: #FF5C85;
+  --rose-hover: #FF3D6C;
+  --petal: #FFD6E2;
+  --petal-faint: #FFF0F5;
+  --accent: #FF88AA;
+  --pixel-border: #FF8FAB;
+  --shadow: 340 60% 20%;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#2E1018;--bg-deep:#220C12;--surface:#3E1C2A;--ink:#FFDCE6;
+    --ink-soft:#BF8A9C;--rose:#FF7DA0;--rose-hover:#FF9DB8;--petal:#4A2535;
+    --petal-faint:#351820;--accent:#FF9DB8;--pixel-border:#6B3A50;--shadow:340 30% 8%;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#2E1018;--bg-deep:#220C12;--surface:#3E1C2A;--ink:#FFDCE6;
+  --ink-soft:#BF8A9C;--rose:#FF7DA0;--rose-hover:#FF9DB8;--petal:#4A2535;
+  --petal-faint:#351820;--accent:#FF9DB8;--pixel-border:#6B3A50;--shadow:340 30% 8%;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{overflow:hidden;height:100%;}
+[hidden]{display:none!important;}
+
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'LXGW WenKai TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  height:100%;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  padding-inline:16px;padding-block:12px;
+  overflow:hidden;position:relative;
+}
+
+/* ── floating hearts ── */
+#hearts-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.fh{
+  position:absolute;bottom:-40px;pointer-events:none;
+  animation:fh-rise linear infinite;opacity:0;
+}
+@keyframes fh-rise{
+  0%{transform:translateY(0) rotate(0) scale(1);opacity:0;}
+  5%{opacity:var(--fh-op,.35);}
+  90%{opacity:var(--fh-op,.35);}
+  100%{transform:translateY(calc(-100vh - 60px)) rotate(var(--fh-rot,360deg)) scale(.6);opacity:0;}
+}
+
+/* ── app ── */
+#app{position:relative;z-index:1;width:100%;max-width:400px;text-align:center;}
+
+/* ── pages ── */
+.page{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  /* fill-mode 用 backwards：動畫結束後不留 transform，
+     否則 position:fixed 的逃跑按鈕會改以 .page 為基準而被裁切 */
+  animation:page-in .5s ease-out backwards;
+  max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+  overflow:hidden;scrollbar-width:none;-ms-overflow-style:none;
+  transform-origin:top center;
+}
+.page::-webkit-scrollbar{display:none;}
+@keyframes page-in{
+  from{opacity:0;transform:translateY(18px) scale(.97);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+
+/* ── cat canvas ── */
+.cat-canvas{width:120px;height:120px;animation:bob 3s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+
+/* ── type ── */
+h1{font-size:1.45rem;font-weight:700;line-height:1.4;text-wrap:balance;}
+.sub{font-size:.88rem;color:var(--ink-soft);line-height:1.5;}
+
+/* ── buttons ── */
+.btn{
+  font-family:inherit;font-size:.92rem;font-weight:700;
+  padding:10px 28px;border:3px solid var(--pixel-border);border-radius:8px;
+  cursor:pointer;transition:transform .15s,background .15s;outline:none;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:3px 3px 0 var(--petal);
+}
+.btn:focus-visible{outline:2px solid var(--rose);outline-offset:3px;}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--petal);}
+.btn-primary{background:var(--rose);color:#fff;border-color:var(--rose-hover);}
+.btn-primary:hover{background:var(--rose-hover);transform:translateY(-2px);}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-secondary{background:var(--petal);color:var(--rose);}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2px;}
+
+/* ── choice cards ── */
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;}
+.card-grid>:last-child:nth-child(odd){grid-column:1/-1;max-width:50%;justify-self:center;}
+.choice-card{
+  background:var(--surface);border:3px solid var(--petal);border-radius:10px;
+  padding:12px 6px;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-family:inherit;box-shadow:2px 2px 0 var(--petal-faint);
+}
+.choice-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.choice-card.selected{
+  border-color:var(--rose);background:var(--petal-faint);
+  box-shadow:3px 3px 0 hsl(var(--shadow)/.1),inset 0 0 0 1px var(--rose);
+  transform:scale(1.03);
+}
+.choice-card .ci{font-size:1.6rem;}
+.choice-card .cl{font-size:.82rem;font-weight:700;color:var(--ink);}
+.choice-card .ck{
+  width:16px;height:16px;border:2px solid var(--petal);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;color:transparent;transition:all .15s;
+}
+.choice-card.selected .ck{background:var(--rose);border-color:var(--rose);color:#fff;}
+
+/* ── calendar ── */
+.cal-wrap{
+  background:var(--surface);border:3px solid var(--petal);border-radius:10px;
+  padding:10px;width:100%;box-shadow:2px 2px 0 var(--petal-faint);
+}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.cal-head h2{font-size:.88rem;font-weight:700;}
+.cal-nav{
+  background:none;border:2px solid var(--petal);font-size:1.1rem;color:var(--ink-soft);
+  cursor:pointer;padding:2px 10px;border-radius:6px;font-family:inherit;
+  transition:background .15s;line-height:1;
+}
+.cal-nav:hover{background:var(--petal);}
+.cal-nav:disabled{opacity:.2;cursor:not-allowed;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.dl{font-size:.62rem;color:var(--ink-soft);text-align:center;padding:2px 0;font-weight:700;letter-spacing:.03em;}
+.dc{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:.76rem;border-radius:6px;cursor:pointer;transition:all .12s;
+  border:2px solid transparent;background:none;color:var(--ink);
+  font-family:inherit;font-variant-numeric:tabular-nums;
+}
+.dc:hover:not(.past):not(.empty){background:var(--petal);}
+.dc.today{font-weight:700;color:var(--rose);}
+.dc.sel{background:var(--rose);color:#fff;font-weight:700;border-color:var(--rose-hover);transform:scale(1.1);}
+.dc.past{color:var(--ink-soft);opacity:.25;cursor:not-allowed;}
+.dc.empty{cursor:default;}
+
+/* ── runaway ── */
+.btn-no{position:relative;z-index:10;user-select:none;touch-action:none;}
+.btn-no.flee{position:fixed;z-index:30;margin:0;transition:left .35s cubic-bezier(.34,1.56,.64,1),top .35s cubic-bezier(.34,1.56,.64,1);}
+.plead-bubble{
+  position:fixed;z-index:11;background:var(--surface);color:var(--rose);
+  font-family:inherit;font-size:.82rem;font-weight:700;padding:6px 14px;
+  border-radius:14px;border:2px solid var(--petal);box-shadow:2px 2px 0 var(--petal-faint);
+  pointer-events:none;opacity:0;transform:translateY(5px);
+  transition:opacity .2s,transform .2s;white-space:nowrap;
+}
+.plead-bubble.show{opacity:1;transform:translateY(0);}
+.dodge-counter{font-size:.75rem;color:var(--ink-soft);min-height:1.2em;margin-top:2px;}
+
+/* ── receipt ── */
+.receipt{
+  background:var(--surface);border:3px dashed var(--pixel-border);border-radius:4px;
+  padding:18px 16px;width:100%;max-width:300px;text-align:left;
+}
+.receipt h2{font-size:.88rem;font-weight:700;color:var(--rose);text-align:center;margin-bottom:10px;letter-spacing:.1em;}
+.receipt-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.8rem;border-bottom:1px dotted var(--petal);}
+.receipt-row:last-of-type{border-bottom:none;}
+.receipt-label{color:var(--ink-soft);font-weight:700;white-space:nowrap;margin-right:8px;}
+.receipt-value{color:var(--ink);text-align:right;word-break:break-all;}
+.receipt-footer{text-align:center;margin-top:12px;padding-top:8px;border-top:2px dashed var(--petal);font-size:.85rem;color:var(--rose);font-weight:700;}
+
+/* ── love card ── */
+.love-card{
+  background:var(--surface);border:3px solid var(--pixel-border);border-radius:10px;
+  padding:20px 16px;width:100%;max-width:300px;box-shadow:3px 3px 0 var(--petal);
+  position:relative;margin-top:6px;
+}
+.love-card::before{
+  content:'💌';position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  font-size:1.1rem;background:var(--surface);padding:2px 8px;border-radius:10px;
+  border:2px solid var(--pixel-border);
+}
+.love-card p{font-size:.82rem;color:var(--ink);line-height:1.85;text-align:center;}
+
+/* ── music button ── */
+#musicBtn{
+  position:fixed;top:10px;right:10px;z-index:20;width:34px;height:34px;
+  border-radius:8px;border:2px solid var(--pixel-border);background:var(--surface);
+  color:var(--rose);font-size:.95rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:2px 2px 0 var(--petal);transition:transform .15s;font-family:inherit;
+}
+#musicBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--petal);}
+#musicBtn.playing{animation:pulse-m 1s ease-in-out infinite;}
+@keyframes pulse-m{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+
+/* ── confetti ── */
+.confetti-box{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+.cf{position:absolute;top:-40px;opacity:0;animation:cf-drop ease-in forwards;}
+@keyframes cf-drop{
+  0%{transform:translateY(0) rotate(0);opacity:0;}
+  8%{opacity:1;}
+  100%{transform:translateY(105vh) rotate(720deg);opacity:0;}
+}
+
+/* ── responsive ── */
+@media(max-width:420px){
+  h1{font-size:1.25rem;}
+  .cat-canvas{width:100px;height:100px;}
+  .btn{padding:9px 20px;font-size:.85rem;}
+  .choice-card{padding:10px 4px;}
+  .choice-card .ci{font-size:1.4rem;}
+}
+@media(prefers-reduced-motion:reduce){
+  .fh,.cf{animation:none!important;opacity:.2!important;}
+  .page{animation:none;}.cat-canvas{animation:none;}
+  *,.btn,.dc,.plead-bubble,.choice-card{transition:none!important;}
+}
+</style>
+</head>
+<body>
+
+<div id="hearts-bg" aria-hidden="true"></div>
+<button id="musicBtn" aria-label="播放音樂">♪</button>
+
+<div id="app">
+  <!-- ① 道歉＋防拒絕 -->
+  <section id="p1" class="page">
+    <canvas class="cat-canvas" id="c1" width="300" height="300"></canvas>
+    <h1>對不起...</h1>
+    <p class="sub">你願意原諒我嗎？</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="yesBtn">好吧 ♡</button>
+      <button class="btn btn-secondary btn-no" id="noBtn">不要</button>
+    </div>
+    <p class="dodge-counter" id="dodgeCounter">&nbsp;</p>
+  </section>
+
+  <!-- ② 選日期 -->
+  <section id="p2" class="page" hidden>
+    <canvas class="cat-canvas" id="c2" width="300" height="300"></canvas>
+    <h1>挑一天約會吧</h1>
+    <p class="sub">選一天，安排我們的約會吧。</p>
+    <div class="cal-wrap">
+      <div class="cal-head">
+        <button class="cal-nav" id="prev">‹</button>
+        <h2 id="calTitle"></h2>
+        <button class="cal-nav" id="next">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <button class="btn btn-primary" id="step1Btn" disabled>繼續 →</button>
+  </section>
+
+  <!-- ③ 選地點 -->
+  <section id="p3" class="page" hidden>
+    <canvas class="cat-canvas" id="c3" width="300" height="300"></canvas>
+    <h1>去哪裡好呢？</h1>
+    <p class="sub">可以選好幾個喔！</p>
+    <div class="card-grid" id="locGrid"></div>
+    <button class="btn btn-primary" id="step2Btn" disabled>下一步 →</button>
+  </section>
+
+  <!-- ④ 選食物 -->
+  <section id="p4" class="page" hidden>
+    <canvas class="cat-canvas" id="c4" width="300" height="300"></canvas>
+    <h1>晚餐想吃什麼？</h1>
+    <p class="sub">選你想吃的～</p>
+    <div class="card-grid" id="foodGrid"></div>
+    <button class="btn btn-primary" id="step3Btn" disabled>下一步 →</button>
+  </section>
+
+  <!-- ⑤ 總結 -->
+  <section id="p5" class="page" hidden>
+    <canvas class="cat-canvas" id="c5" width="300" height="300"></canvas>
+    <h1>約會成功！✨</h1>
+    <div class="receipt" id="receipt"></div>
+    <div class="love-card">
+      <p>
+        我知道我惹你生氣了<br>
+        真的很對不起<br>
+        你是我最珍惜的人<br>
+        以後我會更用心<br>
+        更懂得照顧你的感受<br>
+        謝謝你願意原諒我<br>
+        我愛你 ♡
+      </p>
+    </div>
+  </section>
+</div>
+
+<div class="plead-bubble" id="plead"></div>
+
+<script>
+/* ═══════════════ BLACK CAT DRAWING ═══════════════ */
+function cat(id, expr) {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const g = c.getContext('2d');
+  const w = c.width, h = c.height;
+  const cx = w / 2, cy = h / 2 + 14;
+  const s = w / 150;
+  g.clearRect(0, 0, w, h);
+
+  const blk = '#2D2D2D';
+  const pink = '#FFB0C8';
+  const dPink = '#FF88AA';
+  const wht = '#FFFFFF';
+  const dark = '#1A1A1A';
+
+  /* ── tail ── */
+  g.strokeStyle = blk; g.lineWidth = 7 * s; g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(cx + 26 * s, cy + 34 * s);
+  g.bezierCurveTo(cx + 46 * s, cy + 26 * s, cx + 50 * s, cy + 4 * s, cx + 38 * s, cy - 6 * s);
+  g.stroke();
+  g.fillStyle = blk;
+  g.beginPath(); g.arc(cx + 38 * s, cy - 6 * s, 4.5 * s, 0, Math.PI * 2); g.fill();
+
+  /* ── body ── */
+  g.fillStyle = blk;
+  g.beginPath(); g.ellipse(cx, cy + 34 * s, 24 * s, 18 * s, 0, 0, Math.PI * 2); g.fill();
+
+  /* ── paws ── */
+  g.fillStyle = blk;
+  g.beginPath(); g.ellipse(cx - 12 * s, cy + 50 * s, 9 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(cx + 12 * s, cy + 50 * s, 9 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = pink; g.globalAlpha = 0.65;
+  g.beginPath(); g.ellipse(cx - 12 * s, cy + 52 * s, 4 * s, 2.5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(cx + 12 * s, cy + 52 * s, 4 * s, 2.5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = 1;
+
+  /* ── ears (triangles) ── */
+  function ear(side) {
+    const dir = side === 'L' ? -1 : 1;
+    const droop = (expr === 'plead' && side === 'R') ? 0.15 : 0;
+    g.save();
+    g.translate(cx + dir * 18 * s, cy - 28 * s);
+    g.rotate(droop * dir);
+    g.fillStyle = blk; g.beginPath();
+    g.moveTo(-14 * dir * s, 8 * s);
+    g.lineTo(-2 * dir * s, -38 * s);
+    g.lineTo(10 * dir * s, 4 * s);
+    g.closePath(); g.fill();
+    g.fillStyle = pink; g.beginPath();
+    g.moveTo(-10 * dir * s, 4 * s);
+    g.lineTo(-2 * dir * s, -30 * s);
+    g.lineTo(6 * dir * s, 1 * s);
+    g.closePath(); g.fill();
+    g.restore();
+  }
+  ear('L'); ear('R');
+
+  /* ── head ── */
+  g.fillStyle = blk;
+  g.beginPath(); g.arc(cx, cy, 34 * s, 0, Math.PI * 2); g.fill();
+
+  /* ── blush ── */
+  g.fillStyle = pink; g.globalAlpha = 0.3;
+  g.beginPath(); g.ellipse(cx - 22 * s, cy + 10 * s, 8 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(cx + 22 * s, cy + 10 * s, 8 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = 1;
+
+  /* ── eyes ── */
+  const eyeL = cx - 11 * s, eyeR = cx + 11 * s, eyeY = cy - 4 * s;
+  if (expr === 'hope') {
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL, eyeY, 7 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY, 7 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#6BC5A0';
+    g.beginPath(); g.arc(eyeL, eyeY + 1 * s, 4.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 1 * s, 4.5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = dark;
+    g.beginPath(); g.arc(eyeL, eyeY + 2 * s, 2.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 2 * s, 2.5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL + 2 * s, eyeY - 2 * s, 2 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR + 2 * s, eyeY - 2 * s, 2 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeL - 2 * s, eyeY + 2 * s, 1 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR - 2 * s, eyeY + 2 * s, 1 * s, 0, Math.PI * 2); g.fill();
+  } else if (expr === 'curious') {
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL, eyeY, 6.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY - 1 * s, 7.5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#6BC5A0';
+    g.beginPath(); g.arc(eyeL, eyeY + 1 * s, 4 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY, 5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = dark;
+    g.beginPath(); g.arc(eyeL, eyeY + 2 * s, 2.2 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 1 * s, 2.8 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL + 2 * s, eyeY - 1 * s, 1.8 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR + 2 * s, eyeY - 2 * s, 2 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = dPink;
+    g.font = 'bold ' + (14 * s) + 'px "LXGW WenKai TC",sans-serif';
+    g.fillText('?', cx + 34 * s, cy - 22 * s);
+  } else if (expr === 'hungry') {
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL, eyeY, 6.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY, 6.5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#6BC5A0';
+    g.beginPath(); g.arc(eyeL, eyeY + 1 * s, 4 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 1 * s, 4 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = dark;
+    g.beginPath(); g.arc(eyeL, eyeY + 2 * s, 2.2 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 2 * s, 2.2 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL + 2 * s, eyeY - 2 * s, 1.8 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR + 2 * s, eyeY - 2 * s, 1.8 * s, 0, Math.PI * 2); g.fill();
+  } else if (expr === 'plead') {
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL, eyeY, 8 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY, 8 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#6BC5A0';
+    g.beginPath(); g.arc(eyeL, eyeY + 2 * s, 5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 2 * s, 5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = dark;
+    g.beginPath(); g.arc(eyeL, eyeY + 3 * s, 3 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR, eyeY + 3 * s, 3 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = wht;
+    g.beginPath(); g.arc(eyeL + 3 * s, eyeY - 3 * s, 3 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR + 3 * s, eyeY - 3 * s, 3 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeL - 2 * s, eyeY + 1 * s, 1.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(eyeR - 2 * s, eyeY + 1 * s, 1.5 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#8AD4EE';
+    g.beginPath(); g.ellipse(cx - 20 * s, cy + 4 * s, 2 * s, 4.5 * s, -0.1, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 20 * s, cy + 4 * s, 2 * s, 4.5 * s, 0.1, 0, Math.PI * 2); g.fill();
+  } else if (expr === 'happy') {
+    g.strokeStyle = wht; g.lineWidth = 2.5 * s; g.lineCap = 'round';
+    g.beginPath(); g.arc(eyeL, eyeY + 1 * s, 5 * s, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+    g.beginPath(); g.arc(eyeR, eyeY + 1 * s, 5 * s, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+  }
+
+  /* ── nose ── */
+  g.fillStyle = dPink; g.beginPath();
+  g.moveTo(cx, cy + 6 * s);
+  g.lineTo(cx - 2.5 * s, cy + 9 * s);
+  g.lineTo(cx + 2.5 * s, cy + 9 * s);
+  g.closePath(); g.fill();
+
+  /* ── mouth ── */
+  if (expr === 'hungry') {
+    g.fillStyle = '#444';
+    g.beginPath(); g.arc(cx, cy + 14 * s, 5 * s, 0, Math.PI); g.fill();
+    g.fillStyle = '#FF8888';
+    g.beginPath(); g.ellipse(cx + 1 * s, cy + 17 * s, 3 * s, 2.5 * s, 0, 0, Math.PI * 2); g.fill();
+  } else if (expr === 'plead') {
+    g.strokeStyle = '#555'; g.lineWidth = 1.5 * s; g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(cx - 6 * s, cy + 13 * s);
+    g.quadraticCurveTo(cx - 3 * s, cy + 16 * s, cx, cy + 13 * s);
+    g.quadraticCurveTo(cx + 3 * s, cy + 16 * s, cx + 6 * s, cy + 13 * s);
+    g.stroke();
+  } else {
+    g.strokeStyle = '#555'; g.lineWidth = 1.5 * s; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx, cy + 11 * s, 5 * s, 0.15, Math.PI - 0.15); g.stroke();
+  }
+
+  /* ── whiskers ── */
+  g.strokeStyle = '#777'; g.lineWidth = 1 * s;
+  g.beginPath(); g.moveTo(cx - 14 * s, cy + 6 * s); g.lineTo(cx - 34 * s, cy + 2 * s); g.stroke();
+  g.beginPath(); g.moveTo(cx - 14 * s, cy + 10 * s); g.lineTo(cx - 32 * s, cy + 12 * s); g.stroke();
+  g.beginPath(); g.moveTo(cx + 14 * s, cy + 6 * s); g.lineTo(cx + 34 * s, cy + 2 * s); g.stroke();
+  g.beginPath(); g.moveTo(cx + 14 * s, cy + 10 * s); g.lineTo(cx + 32 * s, cy + 12 * s); g.stroke();
+
+  /* ── expression extras ── */
+  if (expr === 'happy') {
+    [[cx + 38 * s, cy - 26 * s, 6 * s], [cx - 34 * s, cy - 18 * s, 4.5 * s], [cx + 28 * s, cy + 6 * s, 3.5 * s]].forEach(([hx, hy, hs]) => {
+      g.fillStyle = dPink; g.beginPath();
+      g.moveTo(hx, hy + hs * .3);
+      g.bezierCurveTo(hx, hy, hx - hs, hy, hx - hs, hy + hs * .3);
+      g.bezierCurveTo(hx - hs, hy + hs * .7, hx, hy + hs, hx, hy + hs * 1.2);
+      g.bezierCurveTo(hx, hy + hs, hx + hs, hy + hs * .7, hx + hs, hy + hs * .3);
+      g.bezierCurveTo(hx + hs, hy, hx, hy, hx, hy + hs * .3);
+      g.fill();
+    });
+    g.fillStyle = '#FFD700';
+    [[cx - 40 * s, cy - 28 * s], [cx + 44 * s, cy - 8 * s], [cx - 30 * s, cy + 14 * s]].forEach(([sx, sy]) => {
+      g.beginPath();
+      g.moveTo(sx, sy - 3 * s); g.lineTo(sx + 1 * s, sy - 1 * s);
+      g.lineTo(sx + 3 * s, sy); g.lineTo(sx + 1 * s, sy + 1 * s);
+      g.lineTo(sx, sy + 3 * s); g.lineTo(sx - 1 * s, sy + 1 * s);
+      g.lineTo(sx - 3 * s, sy); g.lineTo(sx - 1 * s, sy - 1 * s);
+      g.closePath(); g.fill();
+    });
+  }
+  if (expr === 'hungry') {
+    g.fillStyle = '#8AD4EE'; g.globalAlpha = 0.5;
+    g.beginPath(); g.ellipse(cx + 5 * s, cy + 20 * s, 1.5 * s, 3 * s, 0.1, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 1;
+  }
+}
+
+/* ═══════════════ FLOATING HEARTS ═══════════════ */
+(function () {
+  const box = document.getElementById('hearts-bg');
+  const pal = ['#FFB8CA', '#FF8FAB', '#FFD6E2', '#FF5C85', '#FFC1D3'];
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement('div');
+    d.className = 'fh';
+    const sz = 10 + Math.floor(Math.random() * 14);
+    d.style.setProperty('--fh-op', String(0.15 + Math.random() * 0.25));
+    d.style.setProperty('--fh-rot', (180 + Math.random() * 360) + 'deg');
+    d.innerHTML = '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="' + pal[i % pal.length] + '"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+    d.style.left = (2 + Math.random() * 96) + '%';
+    d.style.animationDuration = (7 + Math.random() * 10) + 's';
+    d.style.animationDelay = (Math.random() * 12) + 's';
+    box.appendChild(d);
+  }
+})();
+
+/* ═══════════════ PAGE NAV ═══════════════ */
+let cur = 1, picked = null;
+const selLoc = new Set(), selFood = new Set();
+
+function go(n) {
+  if (cur === 1) {
+    const no = document.getElementById('noBtn');
+    no.classList.remove('flee'); no.style.cssText = '';
+    document.querySelector('#p1 .btn-row').appendChild(no);   /* 搬回原本的按鈕列 */
+    document.getElementById('plead').classList.remove('show');
+  }
+  document.getElementById('p' + cur).hidden = true;
+  const pg = document.getElementById('p' + n);
+  pg.hidden = false;
+  pg.style.animation = 'none'; pg.offsetHeight; pg.style.animation = '';
+  cur = n;
+  const exprs = { 1: 'plead', 2: 'hope', 3: 'curious', 4: 'hungry', 5: 'happy' };
+  cat('c' + n, exprs[n]);
+  if (n === 2) renderCal();
+  if (n === 5) { showSummary(); boom(); }
+  fitPage();
+}
+
+/* 頁面不再可捲動，所以內容比螢幕高時（小手機的總結頁）整頁等比縮小塞進畫面 */
+function fitPage() {
+  const pg = document.getElementById('p' + cur);
+  pg.style.zoom = '';
+  const avail = (window.visualViewport ? window.visualViewport.height : window.innerHeight) - 24;
+  const h = pg.scrollHeight;
+  if (h > avail && 'zoom' in pg.style) pg.style.zoom = String(Math.max(0.6, avail / h));
+}
+window.addEventListener('resize', fitPage);
+
+/* ═══════════════ CALENDAR ═══════════════ */
+let cY, cM;
+function renderCal() {
+  const now = new Date();
+  if (!cY) { cY = now.getFullYear(); cM = now.getMonth(); }
+  document.getElementById('calTitle').textContent = cY + '年' + (cM + 1) + '月';
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  ['日', '一', '二', '三', '四', '五', '六'].forEach(d => {
+    const sp = document.createElement('span'); sp.className = 'dl'; sp.textContent = d;
+    grid.appendChild(sp);
+  });
+  const first = new Date(cY, cM, 1).getDay();
+  const days = new Date(cY, cM + 1, 0).getDate();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < first; i++) {
+    const b = document.createElement('button'); b.className = 'dc empty'; b.disabled = true;
+    grid.appendChild(b);
+  }
+  for (let d = 1; d <= days; d++) {
+    const b = document.createElement('button'); b.className = 'dc'; b.textContent = d;
+    const dt = new Date(cY, cM, d); dt.setHours(0, 0, 0, 0);
+    if (dt < today) { b.classList.add('past'); b.disabled = true; }
+    else {
+      if (dt.getTime() === today.getTime()) b.classList.add('today');
+      if (picked && picked.getTime() === dt.getTime()) b.classList.add('sel');
+      b.addEventListener('click', () => {
+        picked = new Date(cY, cM, d);
+        renderCal();
+        document.getElementById('step1Btn').disabled = false;
+      });
+    }
+    grid.appendChild(b);
+  }
+  const nm = now.getFullYear() * 12 + now.getMonth();
+  const cm = cY * 12 + cM;
+  document.getElementById('prev').disabled = cm <= nm;
+  document.getElementById('next').disabled = cm >= nm + 6;
+}
+document.getElementById('prev').addEventListener('click', () => { cM--; if (cM < 0) { cM = 11; cY--; } renderCal(); });
+document.getElementById('next').addEventListener('click', () => { cM++; if (cM > 11) { cM = 0; cY++; } renderCal(); });
+document.getElementById('step1Btn').addEventListener('click', () => go(3));
+
+/* ═══════════════ CARD SELECTION ═══════════════ */
+const locItems = [
+  { i: '🎬', l: '看電影' }, { i: '🏖️', l: '海邊散步' },
+  { i: '🍽️', l: '特色餐廳' }, { i: '🎨', l: '手作體驗' }, { i: '🛍️', l: '逛市集' },
+];
+const foodItems = [
+  { i: '🍣', l: '日式料理' }, { i: '🍝', l: '義式料理' },
+  { i: '🥩', l: '韓式燒肉' }, { i: '🍰', l: '精緻甜點' },
+];
+
+function buildCards(items, containerId, set, btnId) {
+  const grid = document.getElementById(containerId);
+  items.forEach(item => {
+    const card = document.createElement('button');
+    card.className = 'choice-card';
+    card.innerHTML = '<span class="ci">' + item.i + '</span><span class="cl">' + item.l + '</span><span class="ck">✓</span>';
+    card.addEventListener('click', () => {
+      if (set.has(item.l)) { set.delete(item.l); card.classList.remove('selected'); }
+      else { set.add(item.l); card.classList.add('selected'); }
+      document.getElementById(btnId).disabled = set.size === 0;
+    });
+    grid.appendChild(card);
+  });
+}
+buildCards(locItems, 'locGrid', selLoc, 'step2Btn');
+buildCards(foodItems, 'foodGrid', selFood, 'step3Btn');
+document.getElementById('step2Btn').addEventListener('click', () => go(4));
+document.getElementById('step3Btn').addEventListener('click', () => go(5));
+
+/* ═══════════════ RUNAWAY BUTTON ═══════════════ */
+const pleads = [
+  '不要這樣嘛～', '拜託嘛～', '人家知道錯了啦～', '再給一次機會嘛～',
+  '我會改的啦～', '不要生氣了嘛～', '你最好了啦～', '嗚嗚嗚～',
+  '真的很抱歉嘛～', '原諒我好不好～', '我錯了我錯了～', '你不理我我會哭哭～',
+];
+let dodges = 0, pleadTimer = null;
+(function () {
+  const no = document.getElementById('noBtn');
+  const yes = document.getElementById('yesBtn');
+  const counter = document.getElementById('dodgeCounter');
+  const bubble = document.getElementById('plead');
+
+  let lastFlee = 0;
+  function flee(e) {
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+    const now = performance.now();
+    if (now - lastFlee < 250) return;   /* 同一次接觸觸發多個事件時只算一次 */
+    lastFlee = now; dodges++;
+    bubble.textContent = pleads[(dodges - 1) % pleads.length];
+    bubble.classList.remove('show');
+    /* 第一次逃跑就把按鈕搬到 body 底下：
+       這樣不管頁面有沒有 transform / overflow，按鈕都不會被裁切、也不會撐出捲動 */
+    if (no.parentNode !== document.body) document.body.appendChild(no);
+    no.classList.add('flee');
+    const rect = no.getBoundingClientRect();
+    const pad = 16, bw = rect.width || 86, bh = rect.height || 42;
+    const px = e.touches ? e.touches[0].clientX : e.clientX;
+    const py = e.touches ? e.touches[0].clientY : e.clientY;
+    let nx, ny;
+    for (let tries = 0; tries < 12; tries++) {
+      nx = pad + Math.random() * Math.max(0, window.innerWidth - bw - pad * 2);
+      ny = pad + Math.random() * Math.max(0, window.innerHeight - bh - pad * 2);
+      /* 新位置要離滑鼠／手指至少 140px，才不會跳到游標底下馬上又被碰到 */
+      if (px == null || Math.hypot(nx + bw / 2 - px, ny + bh / 2 - py) > 140) break;
+    }
+    no.style.left = nx + 'px'; no.style.top = ny + 'px';
+    requestAnimationFrame(() => {
+      bubble.style.left = (nx + bw / 2 - bubble.offsetWidth / 2) + 'px';
+      bubble.style.top = (ny + bh + 8) + 'px';
+      const br = bubble.getBoundingClientRect();
+      if (br.right > window.innerWidth - 8) bubble.style.left = (window.innerWidth - br.width - 8) + 'px';
+      if (br.left < 8) bubble.style.left = '8px';
+      if (br.bottom > window.innerHeight - 8) bubble.style.top = (ny - br.height - 8) + 'px';
+      bubble.classList.add('show');
+    });
+    clearTimeout(pleadTimer);
+    pleadTimer = setTimeout(() => bubble.classList.remove('show'), 2000);
+    yes.style.transform = 'scale(' + Math.min(1.2, 1 + dodges * 0.025) + ')';
+    counter.textContent = '已經逃跑 ' + dodges + ' 次了...';
+  }
+  no.addEventListener('mouseenter', flee);
+  no.addEventListener('mouseover', flee);
+  no.addEventListener('touchstart', flee, { passive: false });
+  no.addEventListener('pointerdown', flee);
+  no.addEventListener('click', flee);   /* 鍵盤或超快點擊也一律閃躲 */
+  yes.addEventListener('click', () => go(2));
+})();
+
+/* ═══════════════ SUMMARY ═══════════════ */
+const wd = ['日', '一', '二', '三', '四', '五', '六'];
+function showSummary() {
+  const r = document.getElementById('receipt');
+  const ds = picked ? picked.getFullYear() + '/' + (picked.getMonth() + 1) + '/' + picked.getDate() + ' 星期' + wd[picked.getDay()] : '';
+  r.innerHTML =
+    '<h2>♡ 約會小票 ♡</h2>' +
+    '<div class="receipt-row"><span class="receipt-label">📅 日期</span><span class="receipt-value">' + ds + '</span></div>' +
+    '<div class="receipt-row"><span class="receipt-label">📍 地點</span><span class="receipt-value">' + ([...selLoc].join('、') || '—') + '</span></div>' +
+    '<div class="receipt-row"><span class="receipt-label">🍽️ 晚餐</span><span class="receipt-value">' + ([...selFood].join('、') || '—') + '</span></div>' +
+    '<div class="receipt-footer">期待見到你 ♡</div>';
+}
+
+/* ═══════════════ CONFETTI ═══════════════ */
+function boom() {
+  const box = document.createElement('div'); box.className = 'confetti-box';
+  document.body.appendChild(box);
+  const items = ['♡', '♥', '💕', '✨', '💖', '❤', '🌸', '⭐'];
+  for (let i = 0; i < 50; i++) {
+    const sp = document.createElement('span'); sp.className = 'cf';
+    sp.textContent = items[i % items.length];
+    sp.style.left = Math.random() * 100 + '%';
+    sp.style.animationDelay = Math.random() * 3 + 's';
+    sp.style.animationDuration = (2 + Math.random() * 2) + 's';
+    sp.style.fontSize = (12 + Math.random() * 18) + 'px';
+    box.appendChild(sp);
+  }
+  setTimeout(() => box.remove(), 7000);
+}
+
+/* ═══════════════ MUSIC BOX ═══════════════ */
+let audioCtx = null, musicOn = false, mTimer = null;
+const musicBtn = document.getElementById('musicBtn');
+const melody = [
+  [659, .22], [659, .22], [784, .22], [784, .22], [880, .22], [880, .22], [784, .44],
+  [698, .22], [698, .22], [659, .22], [659, .22], [587, .22], [587, .22], [523, .44],
+  [784, .22], [784, .22], [698, .22], [698, .22], [659, .22], [659, .22], [587, .44],
+  [784, .22], [784, .22], [698, .22], [698, .22], [659, .22], [659, .22], [587, .44],
+  [659, .22], [659, .22], [784, .22], [784, .22], [880, .22], [880, .22], [784, .44],
+  [698, .22], [698, .22], [659, .22], [659, .22], [587, .22], [587, .22], [523, .44],
+];
+
+function playNote(freq, dur, time) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.1, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time + dur + 0.45);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(time); o.stop(time + dur + 0.5);
+  const o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+  o2.type = 'sine'; o2.frequency.value = freq * 3;
+  g2.gain.setValueAtTime(0.025, time);
+  g2.gain.exponentialRampToValueAtTime(0.001, time + dur * 0.5);
+  o2.connect(g2); g2.connect(audioCtx.destination);
+  o2.start(time); o2.stop(time + dur + 0.3);
+}
+function schedLoop() {
+  if (!musicOn) return;
+  let t = audioCtx.currentTime + 0.05;
+  melody.forEach(([f, d]) => { playNote(f, d, t); t += d + 0.05; });
+  mTimer = setTimeout(schedLoop, (t - audioCtx.currentTime) * 1000 + 600);
+}
+musicBtn.addEventListener('click', () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (musicOn) {
+    musicOn = false; clearTimeout(mTimer);
+    musicBtn.textContent = '♪'; musicBtn.classList.remove('playing');
+  } else {
+    musicOn = true;
+    musicBtn.textContent = '♫'; musicBtn.classList.add('playing');
+    schedLoop();
+  }
+});
+
+/* ═══════════════ INIT ═══════════════ */
+cat('c1', 'plead');
+fitPage();
+</script>
+</body>
+</html>
