@@ -212,6 +212,29 @@ h1{font-size:1.45rem;font-weight:700;line-height:1.4;text-wrap:balance;}
 #musicBtn.playing{animation:pulse-m 1s ease-in-out infinite;}
 @keyframes pulse-m{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
 
+/* ── 播放音樂提示（♪ 按鈕正下方，箭頭忽大忽小往上指）── */
+#musicHint{
+  position:fixed;top:50px;right:10px;z-index:20;
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+  pointer-events:none;
+}
+.hint-arrow{
+  width:34px;text-align:center;   /* 跟 ♪ 按鈕同寬，箭頭正對按鈕中心 */
+  font-size:1.6rem;line-height:1;font-weight:700;color:var(--rose);
+  animation:hint-pulse .9s ease-in-out infinite;transform-origin:50% 0;
+}
+@keyframes hint-pulse{
+  0%,100%{transform:scale(1) translateY(0);opacity:.8;}
+  50%{transform:scale(1.5) translateY(-5px);opacity:1;}
+}
+.hint-text{
+  font-size:.72rem;font-weight:700;color:var(--rose);white-space:nowrap;
+  background:var(--surface);border:2px solid var(--petal);border-radius:10px;
+  padding:3px 8px;box-shadow:2px 2px 0 var(--petal-faint);
+  animation:hint-glow 1.8s ease-in-out infinite;
+}
+@keyframes hint-glow{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+
 /* ── confetti ── */
 .confetti-box{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
 .cf{position:absolute;top:-40px;opacity:0;animation:cf-drop ease-in forwards;}
@@ -234,6 +257,7 @@ h1{font-size:1.45rem;font-weight:700;line-height:1.4;text-wrap:balance;}
   .fh,.cf{animation:none!important;opacity:.2!important;}
   .page{animation:none;}.cat-canvas,.cover-video{animation:none;}
   *,.btn,.dc,.plead-bubble,.choice-card{transition:none!important;}
+  .hint-arrow,.hint-text,#musicBtn.playing{animation:none!important;}
 }
 </style>
 </head>
@@ -241,6 +265,11 @@ h1{font-size:1.45rem;font-weight:700;line-height:1.4;text-wrap:balance;}
 
 <div id="hearts-bg" aria-hidden="true"></div>
 <button id="musicBtn" aria-label="播放音樂">♪</button>
+<!-- 音樂被瀏覽器擋住自動播放時顯示的提示；音樂一開始播就消失 -->
+<div id="musicHint" hidden aria-hidden="true">
+  <span class="hint-arrow">↑</span>
+  <span class="hint-text">播放音樂 ♪</span>
+</div>
 
 <div id="app">
   <!-- ① 道歉＋防拒絕 -->
@@ -793,13 +822,46 @@ function startSynth() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   musicOn = true; setBtn(true); schedLoop();
 }
+const musicHint = document.getElementById('musicHint');
+function isPlaying() { return musicOn || !bgm.paused; }
+function hideHint() { musicHint.hidden = true; }
+
+/* 開始播放音樂。auto=true 表示是網頁自動嘗試（沒有使用者手勢）：
+   被瀏覽器擋下時不算檔案壞掉，只顯示提示箭頭，等使用者碰畫面再播 */
+function startMusic(auto) {
+  if (isPlaying()) return Promise.resolve(true);
+  if (bgmOk === false) {
+    if (auto) return Promise.resolve(false);   /* 合成音一定需要手勢 */
+    startSynth(); hideHint(); return Promise.resolve(true);
+  }
+  return bgm.play().then(() => { bgmOk = true; setBtn(true); hideHint(); return true; })
+    .catch(err => {
+      if (err && err.name === 'NotAllowedError') {       /* 自動播放被擋 → 等手勢 */
+        if (!auto) { startSynth(); hideHint(); return true; }
+        return false;
+      }
+      bgmOk = false;                                       /* 404 / 格式不支援 → 音樂盒 */
+      if (auto) return false;
+      startSynth(); hideHint(); return true;
+    });
+}
 musicBtn.addEventListener('click', () => {
-  if (musicOn || !bgm.paused) { stopAll(); return; }
-  if (bgmOk === false) { startSynth(); return; }
-  /* 嘗試播放音樂檔；失敗（404、格式不支援、被瀏覽器擋）就改用音樂盒 */
-  bgm.play().then(() => { bgmOk = true; setBtn(true); })
-            .catch(() => { bgmOk = false; startSynth(); });
+  if (isPlaying()) { stopAll(); return; }
+  startMusic(false);
 });
+/* 1) 打開網頁先自動試播（少數瀏覽器會放行）；被擋就顯示提示箭頭 */
+startMusic(true).then(ok => { if (!ok) musicHint.hidden = false; });
+/* 2) 使用者在畫面任何地方第一次點擊／觸碰 → 自動開始音樂（點 ♪ 本身除外，交給按鈕處理） */
+function firstGesture(e) {
+  if (e.target.closest && e.target.closest('#musicBtn')) return;
+  document.removeEventListener('pointerdown', firstGesture, true);
+  document.removeEventListener('touchstart', firstGesture, true);
+  document.removeEventListener('keydown', firstGesture, true);
+  startMusic(false);
+}
+document.addEventListener('pointerdown', firstGesture, true);
+document.addEventListener('touchstart', firstGesture, { capture: true, passive: true });
+document.addEventListener('keydown', firstGesture, true);
 
 /* ═══════════════ INIT ═══════════════ */
 cat('c1', 'plead');
