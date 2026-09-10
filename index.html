@@ -549,11 +549,19 @@ function go(n) {
 
 /* 頁面不再可捲動，所以內容比螢幕高時（小手機的總結頁）整頁等比縮小塞進畫面 */
 function fitPage() {
+  /* 縮放必須加在 #app（整個內容欄）上，而不是 .page：
+     .page 的父層寬度固定 400px，只縮 .page 會讓它在自己的座標裡變寬，
+     日曆的正方形格子跟著變高，等於一邊縮一邊長回來 */
+  const app = document.getElementById('app');
   const pg = document.getElementById('p' + cur);
-  pg.style.zoom = '';
+  if (!('zoom' in app.style)) return;
+  app.style.zoom = ''; pg.style.maxHeight = '';
   const avail = (window.visualViewport ? window.visualViewport.height : window.innerHeight) - 24;
   const h = pg.scrollHeight;
-  if (h > avail && 'zoom' in pg.style) pg.style.zoom = String(Math.max(0.6, avail / h));
+  if (h > avail) {
+    app.style.zoom = String(Math.max(0.5, avail / h));
+    pg.style.maxHeight = 'none';   /* 已經縮到剛好塞進畫面，不需要再裁切 */
+  }
 }
 window.addEventListener('resize', fitPage);
 
